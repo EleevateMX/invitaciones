@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import CountryBanner from '@/components/CountryBanner'
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -40,9 +41,22 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={inter.variable}>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#F72585" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="teinvitaron" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1"
+        />
+      </head>
       <body className={inter.className}>
         <CountryBanner />
         {children}
+        <ServiceWorkerRegistration />
       </body>
     </html>
   )
