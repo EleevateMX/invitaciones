@@ -171,7 +171,7 @@ export default function OpsPage() {
     setPushResult(null)
     try {
       const res = await fetch(
-        'https://wtuttnrcsezjlvqygdse.supabase.co/functions/v1/send-push-inv',
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-push-inv`,
         {
           method: 'POST',
           headers: {

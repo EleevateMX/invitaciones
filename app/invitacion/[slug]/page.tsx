@@ -435,7 +435,7 @@ function DbInvitation({ ev }: { ev: DbEvent }) {
     setRsvpDone(true)
     // Notify event owner via push
     if (ev.owner_id) {
-      fetch('https://wtuttnrcsezjlvqygdse.supabase.co/functions/v1/send-push-inv', {
+      fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-push-inv`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
