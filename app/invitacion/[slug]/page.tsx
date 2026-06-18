@@ -388,37 +388,205 @@ function CumpleInvitation() {
   )
 }
 
+/* ─── Database invitation (real events) ─── */
+
+interface DbEvent {
+  slug: string
+  tipo: string
+  titulo: string
+  subtitulo: string | null
+  intro: string | null
+  fecha: string | null
+  hora: string | null
+  lugar: string | null
+  ubicacion: string | null
+  color: string | null
+  theme: string
+  target_date: string | null
+}
+
+function DbInvitation({ ev }: { ev: DbEvent }) {
+  const [rsvpName, setRsvpName] = useState('')
+  const [rsvpDone, setRsvpDone] = useState(false)
+
+  const gradient: Record<string, string> = {
+    boda: 'from-stone-900 via-stone-800 to-stone-900',
+    xv: 'from-purple-950 via-violet-900 to-fuchsia-950',
+    cumple: 'from-orange-400 via-pink-500 to-purple-600',
+    bautizo: 'from-sky-100 to-blue-200',
+    'baby-shower': 'from-emerald-100 to-teal-200',
+    corporativo: 'from-slate-800 to-slate-900',
+    graduacion: 'from-indigo-900 to-blue-900',
+    revelacion: 'from-pink-300 to-blue-300',
+  }
+  const bg = gradient[ev.theme] ?? gradient['boda']
+  const accent = ['bautizo', 'baby-shower', 'revelacion'].includes(ev.theme) ? '#F72585' : '#FFB700'
+  const textLight = ['bautizo', 'baby-shower'].includes(ev.theme)
+
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const waConfirm = `https://wa.me/?text=${encodeURIComponent(`¡Confirmo mi asistencia a: ${ev.titulo}! ${ev.fecha ?? ''} en ${ev.lugar ?? ''}.`)}`
+
+  return (
+    <div className={`min-h-screen bg-gradient-to-b ${bg} flex flex-col items-center justify-center px-4 py-16 relative overflow-hidden`}>
+      <div className="particles absolute inset-0 pointer-events-none">
+        {Array.from({ length: 8 }).map((_, i) => <div key={i} className="particle" />)}
+      </div>
+
+      <div className="relative z-10 max-w-sm w-full text-center">
+        {/* Ornament */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="h-px w-12" style={{ background: accent }} />
+          <div className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
+          <div className="h-px w-12" style={{ background: accent }} />
+        </div>
+
+        {ev.intro && (
+          <p className="text-xs tracking-[0.25em] uppercase mb-3 font-medium" style={{ color: accent }}>
+            {ev.intro}
+          </p>
+        )}
+
+        <h1 className={`font-display text-5xl italic mb-3 leading-tight ${textLight ? 'text-dark' : 'text-white'}`}>
+          {ev.titulo}
+        </h1>
+
+        {ev.subtitulo && (
+          <p className={`text-sm tracking-[0.2em] uppercase mb-8 ${textLight ? 'text-dark/60' : 'text-white/60'}`}>
+            {ev.subtitulo}
+          </p>
+        )}
+
+        <div className="space-y-3 mb-8">
+          {ev.fecha && (
+            <div className={`flex items-center justify-center gap-2 text-sm ${textLight ? 'text-dark/80' : 'text-white/80'}`}>
+              <Calendar size={14} style={{ color: accent }} />
+              {ev.fecha}
+            </div>
+          )}
+          {ev.hora && (
+            <div className={`flex items-center justify-center gap-2 text-sm ${textLight ? 'text-dark/80' : 'text-white/80'}`}>
+              <Clock size={14} style={{ color: accent }} />
+              {ev.hora}
+            </div>
+          )}
+          {ev.lugar && (
+            <div className={`flex items-center justify-center gap-2 text-sm ${textLight ? 'text-dark/80' : 'text-white/80'}`}>
+              <MapPin size={14} style={{ color: accent }} />
+              {ev.lugar}
+            </div>
+          )}
+        </div>
+
+        {ev.target_date && (
+          <>
+            <p className={`text-xs uppercase tracking-widest mb-4 ${textLight ? 'text-dark/50' : 'text-white/50'}`}>
+              Cuenta regresiva
+            </p>
+            <CountdownTimer targetDate={ev.target_date} />
+          </>
+        )}
+
+        {/* RSVP */}
+        {!rsvpDone ? (
+          <div className="mt-10 space-y-3">
+            <input
+              type="text"
+              placeholder="Tu nombre para confirmar asistencia"
+              value={rsvpName}
+              onChange={(e) => setRsvpName(e.target.value)}
+              className="w-full bg-white/20 border border-white/30 text-white placeholder-white/50 rounded-full px-5 py-3 text-sm outline-none focus:border-white/60"
+            />
+            <a
+              href={waConfirm}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => rsvpName && setRsvpDone(true)}
+              className="block w-full py-3.5 rounded-full font-bold text-sm transition-all hover:scale-105 hover:shadow-lg text-center"
+              style={{ background: accent, color: textLight ? '#fff' : '#1A1A2E' }}
+            >
+              Confirmar asistencia por WhatsApp
+            </a>
+            <WhatsAppShareButton
+              message={`¡Estás invitado/a! — ${ev.titulo}${ev.fecha ? ` — ${ev.fecha}` : ''}`}
+              url={shareUrl}
+              label="Compartir invitación"
+              className="w-full justify-center !bg-white/10 !hover:bg-white/20 border border-white/20"
+            />
+          </div>
+        ) : (
+          <div className="mt-10 bg-white/10 border border-white/20 rounded-2xl p-6 text-center">
+            <p className="text-2xl mb-2">🎉</p>
+            <p className={`font-bold text-lg ${textLight ? 'text-dark' : 'text-white'}`}>
+              ¡Gracias, {rsvpName}!
+            </p>
+            <p className={`text-sm mt-1 ${textLight ? 'text-dark/60' : 'text-white/60'}`}>
+              Tu confirmación fue enviada por WhatsApp
+            </p>
+          </div>
+        )}
+      </div>
+
+      <Link href="/" className="absolute top-4 left-4 flex items-center gap-1.5 text-white/40 hover:text-white/70 text-sm transition-colors">
+        <ArrowRight size={14} className="rotate-180" /> Inicio
+      </Link>
+    </div>
+  )
+}
+
 /* ─── Main Page ─── */
 
 export default function InvitacionPage() {
   const params = useParams()
   const slug = typeof params.slug === 'string' ? params.slug : ''
-  const invitation = getInvitation(slug)
 
-  if (!invitation) {
+  // Static demo invitations
+  const staticInv = getInvitation(slug)
+  const [dbEvent, setDbEvent] = useState<DbEvent | null>(null)
+  const [notFound, setNotFound] = useState(false)
+  const [loading, setLoading] = useState(!staticInv)
+
+  useEffect(() => {
+    if (staticInv) return
+    const { createClient } = require('@/lib/supabase/client')
+    const supabase = createClient()
+    supabase
+      .from('inv_events')
+      .select('slug,tipo,titulo,subtitulo,intro,fecha,hora,lugar,ubicacion,color,theme,target_date')
+      .eq('slug', slug)
+      .eq('activo', true)
+      .single()
+      .then(({ data, error }: { data: DbEvent | null; error: unknown }) => {
+        if (error || !data) setNotFound(true)
+        else setDbEvent(data)
+        setLoading(false)
+      })
+  }, [slug, staticInv])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (notFound || (!staticInv && !dbEvent)) {
     return (
       <div className="min-h-screen bg-[#1A1A2E] flex flex-col items-center justify-center px-4 text-center">
         <h1 className="text-4xl font-bold text-white mb-4">Invitación no encontrada</h1>
-        <p className="text-gray-400 mb-8">
-          Esta invitación no existe o ya expiró.
-        </p>
-        <Link
-          href="/crear"
-          className="bg-[#F72585] hover:bg-[#B5179E] text-white font-bold px-8 py-4 rounded-full transition-all duration-200"
-        >
+        <p className="text-gray-400 mb-8">Esta invitación no existe o ya expiró.</p>
+        <Link href="/crear" className="bg-[#F72585] text-white font-bold px-8 py-4 rounded-full hover:bg-[#B5179E] transition-all">
           Crear mi invitación
         </Link>
       </div>
     )
   }
 
-  if (invitation.theme === 'xv') {
-    return <XvInvitation />
-  }
+  // Real DB event
+  if (dbEvent) return <DbInvitation ev={dbEvent} />
 
-  if (invitation.theme === 'cumple') {
-    return <CumpleInvitation />
-  }
-
+  // Static demos
+  if (staticInv!.theme === 'xv') return <XvInvitation />
+  if (staticInv!.theme === 'cumple') return <CumpleInvitation />
   return <BodaInvitation />
 }

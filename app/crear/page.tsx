@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Heart,
@@ -14,35 +14,44 @@ import {
   Gift,
   HelpCircle,
   X,
+  Loader2,
 } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import { createClient } from '@/lib/supabase/client'
 
 const EVENT_TYPES = [
-  { name: 'Boda', icon: Heart, slug: 'boda', demoSlug: 'demo-boda' },
-  { name: 'XV Años', icon: Crown, slug: 'xv-anos', demoSlug: 'demo-xv' },
-  { name: 'Cumpleaños', icon: Cake, slug: 'cumpleanos', demoSlug: 'demo-cumple' },
-  { name: 'Bautizo', icon: Droplets, slug: 'bautizo', demoSlug: 'demo-boda' },
-  { name: 'Graduación', icon: GraduationCap, slug: 'graduacion', demoSlug: 'demo-boda' },
-  { name: 'Primera Comunión', icon: Star, slug: 'primera-comunion', demoSlug: 'demo-boda' },
-  { name: 'Corporativo', icon: Briefcase, slug: 'corporativo', demoSlug: 'demo-boda' },
-  { name: 'Revelación de Género', icon: Baby, slug: 'revelacion-genero', demoSlug: 'demo-boda' },
-  { name: 'Baby Shower', icon: Gift, slug: 'baby-shower', demoSlug: 'demo-boda' },
-  { name: 'Otro', icon: HelpCircle, slug: 'otro', demoSlug: 'demo-boda' },
+  { name: 'Boda', icon: Heart, slug: 'boda', theme: 'boda' },
+  { name: 'XV Años', icon: Crown, slug: 'xv-anos', theme: 'xv' },
+  { name: 'Cumpleaños', icon: Cake, slug: 'cumpleanos', theme: 'cumple' },
+  { name: 'Bautizo', icon: Droplets, slug: 'bautizo', theme: 'bautizo' },
+  { name: 'Graduación', icon: GraduationCap, slug: 'graduacion', theme: 'graduacion' },
+  { name: 'Primera Comunión', icon: Star, slug: 'primera-comunion', theme: 'boda' },
+  { name: 'Corporativo', icon: Briefcase, slug: 'corporativo', theme: 'corporativo' },
+  { name: 'Revelación de Género', icon: Baby, slug: 'revelacion-genero', theme: 'revelacion' },
+  { name: 'Baby Shower', icon: Gift, slug: 'baby-shower', theme: 'baby-shower' },
+  { name: 'Otro', icon: HelpCircle, slug: 'otro', theme: 'boda' },
 ]
 
 interface SelectedEvent {
   name: string
-  demoSlug: string
+  theme: string
 }
 
 export default function CrearPage() {
   const router = useRouter()
+  const supabase = createClient()
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent | null>(null)
   const [eventName, setEventName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [user, setUser] = useState<{ id: string } | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+  }, [supabase])
 
   function openModal(event: typeof EVENT_TYPES[0]) {
-    setSelectedEvent({ name: event.name, demoSlug: event.demoSlug })
+    setSelectedEvent({ name: event.name, theme: event.theme })
     setEventName('')
   }
 
@@ -50,10 +59,38 @@ export default function CrearPage() {
     setSelectedEvent(null)
   }
 
-  function handleVerPlantillas() {
-    if (selectedEvent) {
-      router.push(`/invitacion/${selectedEvent.demoSlug}`)
+  async function handleVerPlantillas() {
+    if (!selectedEvent) return
+
+    // Not logged in → go to demo
+    if (!user) {
+      const demoMap: Record<string, string> = {
+        boda: 'demo-boda', xv: 'demo-xv', cumple: 'demo-cumple',
+      }
+      router.push(`/invitacion/${demoMap[selectedEvent.theme] ?? 'demo-boda'}`)
+      return
     }
+
+    setSaving(true)
+    const { data, error } = await supabase
+      .from('inv_events')
+      .insert({
+        owner_id: user.id,
+        tipo: selectedEvent.name,
+        theme: selectedEvent.theme,
+        titulo: eventName || selectedEvent.name,
+        subtitulo: '',
+        activo: true,
+      })
+      .select('slug')
+      .single()
+
+    setSaving(false)
+    if (error || !data) {
+      alert('Ocurrió un error. Intenta de nuevo.')
+      return
+    }
+    router.push(`/invitacion/${data.slug}`)
   }
 
   return (
@@ -142,9 +179,11 @@ export default function CrearPage() {
               </button>
               <button
                 onClick={handleVerPlantillas}
-                className="flex-1 bg-[#F72585] hover:bg-[#B5179E] text-white font-bold px-4 py-3 rounded-xl text-sm transition-all duration-200"
+                disabled={saving}
+                className="flex-1 bg-[#F72585] hover:bg-[#B5179E] text-white font-bold px-4 py-3 rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60"
               >
-                Ver plantillas
+                {saving && <Loader2 size={14} className="animate-spin" />}
+                {user ? 'Crear invitación' : 'Ver vista previa'}
               </button>
             </div>
           </div>
