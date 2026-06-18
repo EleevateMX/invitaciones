@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { MapPin, Clock, Calendar, ArrowRight } from 'lucide-react'
 import WhatsAppShareButton from '@/components/WhatsAppShareButton'
 import { getInvitation } from '@/lib/invitations'
+import AdBanner from '@/components/AdBanner'
 
 /* ─── Countdown Timer ─── */
 
@@ -403,6 +404,8 @@ interface DbEvent {
   color: string | null
   theme: string
   target_date: string | null
+  show_ads: boolean | null
+  owner_id: string | null
 }
 
 function DbInvitation({ ev }: { ev: DbEvent }) {
