@@ -425,15 +425,45 @@ function DbInvitation({ ev }: { ev: DbEvent }) {
   const bg = gradient[ev.theme] ?? gradient['boda']
   const accent = ['bautizo', 'baby-shower', 'revelacion'].includes(ev.theme) ? '#F72585' : '#FFB700'
   const textLight = ['bautizo', 'baby-shower'].includes(ev.theme)
+  const showAds = ev.show_ads !== false // default true
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
   const waConfirm = `https://wa.me/?text=${encodeURIComponent(`¡Confirmo mi asistencia a: ${ev.titulo}! ${ev.fecha ?? ''} en ${ev.lugar ?? ''}.`)}`
+
+  function handleConfirm() {
+    if (!rsvpName) return
+    setRsvpDone(true)
+    // Notify event owner via push
+    if (ev.owner_id) {
+      fetch('https://wtuttnrcsezjlvqygdse.supabase.co/functions/v1/send-push-inv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-op-key': 'teinvitaron-push-2026',
+        },
+        body: JSON.stringify({
+          user_id: ev.owner_id,
+          title: '🎉 Nueva confirmación',
+          body: `${rsvpName} confirmó su asistencia a ${ev.titulo}`,
+          url: '/dashboard',
+          tag: 'rsvp-confirm',
+        }),
+      }).catch(() => {})
+    }
+  }
 
   return (
     <div className={`min-h-screen bg-gradient-to-b ${bg} flex flex-col items-center justify-center px-4 py-16 relative overflow-hidden`}>
       <div className="particles absolute inset-0 pointer-events-none">
         {Array.from({ length: 8 }).map((_, i) => <div key={i} className="particle" />)}
       </div>
+
+      {/* Top ad banner */}
+      {showAds && (
+        <div className="relative z-10 w-full max-w-sm mb-6">
+          <AdBanner slot="banner_top" />
+        </div>
+      )}
 
       <div className="relative z-10 max-w-sm w-full text-center">
         {/* Ornament */}
@@ -489,6 +519,13 @@ function DbInvitation({ ev }: { ev: DbEvent }) {
           </>
         )}
 
+        {/* Mid ad banner */}
+        {showAds && (
+          <div className="mt-6">
+            <AdBanner slot="banner_mid" />
+          </div>
+        )}
+
         {/* RSVP */}
         {!rsvpDone ? (
           <div className="mt-10 space-y-3">
@@ -503,7 +540,7 @@ function DbInvitation({ ev }: { ev: DbEvent }) {
               href={waConfirm}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => rsvpName && setRsvpDone(true)}
+              onClick={handleConfirm}
               className="block w-full py-3.5 rounded-full font-bold text-sm transition-all hover:scale-105 hover:shadow-lg text-center"
               style={{ background: accent, color: textLight ? '#fff' : '#1A1A2E' }}
             >
@@ -525,6 +562,13 @@ function DbInvitation({ ev }: { ev: DbEvent }) {
             <p className={`text-sm mt-1 ${textLight ? 'text-dark/60' : 'text-white/60'}`}>
               Tu confirmación fue enviada por WhatsApp
             </p>
+          </div>
+        )}
+
+        {/* Bottom ad banner */}
+        {showAds && (
+          <div className="mt-8">
+            <AdBanner slot="banner_bottom" />
           </div>
         )}
       </div>
@@ -554,7 +598,7 @@ export default function InvitacionPage() {
     const supabase = createClient()
     supabase
       .from('inv_events')
-      .select('slug,tipo,titulo,subtitulo,intro,fecha,hora,lugar,ubicacion,color,theme,target_date')
+      .select('slug,tipo,titulo,subtitulo,intro,fecha,hora,lugar,ubicacion,color,theme,target_date,show_ads,owner_id')
       .eq('slug', slug)
       .eq('activo', true)
       .single()
